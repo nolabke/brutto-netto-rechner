@@ -1,0 +1,213 @@
+<title>Brutto-Netto-Rechner 2026</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.4.2/dist/fonts/geist-sans/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.4.2/dist/fonts/geist-mono/style.css"><style>
+/* Layout: Eingabespalte links, Ergebnis rechts; Abzugsliste wie eine Lohnabrechnung, darunter Vergleich und Kurve */
+:root{
+  --bg:#EDF0F3; --surface:#FFFFFF; --ink:#14212B; --muted:#586977; --line:#D6DDE4; --soft:#F4F6F8;
+  --accent:#0b1b78c0; --accent-ink:#FFFFFF; --focus:#0b6d78ea;
+  --c-net:#0b1b78c0; --c-tax:#c21256b2; --c-rv:#d04f2fa9; --c-kv:#6ac44fda; --c-av:#6a7b89d0;
+  --font-sans: "Geist Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151B; --surface:#161F27; --ink:#E7EDF2; --muted:#96A7B4; --line:#293641; --soft:#1B2630;
+    --accent:#3DB8C3; --accent-ink:#06191C; --focus:#3DB8C3;
+    --c-net:#3DB8C3; --c-tax:#E9953D; --c-rv:#6D93F0; --c-kv:#B484E6; --c-av:#8FA0AE;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E151B; --surface:#161F27; --ink:#E7EDF2; --muted:#96A7B4; --line:#293641; --soft:#1B2630;
+  --accent:#3DB8C3; --accent-ink:#06191C; --focus:#3DB8C3;
+  --c-net:#3DB8C3; --c-tax:#E9953D; --c-rv:#6D93F0; --c-kv:#B484E6; --c-av:#8FA0AE;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 40px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:clamp(1.5rem,1.1rem + 1.6vw,2.1rem);line-height:1.15;margin:0;font-weight:600;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:1rem;margin:0 0 12px;font-weight:600}
+.lede{font-size:1.2rem; margin:6px 0 0;color:var(--muted);max-width:100%}
+.grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:20px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:20px;min-width:0}
+.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+label,.lbl{display:block;font-size:.78rem;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.field{display:flex;flex-direction:column;margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+input[type=number],select{width:100%;font:inherit;font-family:var(--font-mono);color:var(--ink);background:var(--soft);
+  border:1px solid var(--line);border-radius:4px;padding:9px 10px;min-height:42px}
+select{font-family:var(--font-sans)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+input[type=range]{width:100%;accent-color:var(--accent);margin:10px 0 0}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--soft)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{margin:0;text-align:center;padding:8px 6px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--muted)}
+.seg input:checked + label{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible + label{outline:2px solid var(--focus);outline-offset:-2px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.88rem;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;margin:0}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:.8rem;color:var(--muted);margin-top:6px}
+
+.hero{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px}
+.net{font-family:var(--font-mono);font-weight:500;font-size:clamp(2.1rem,1.4rem + 3vw,3.1rem);line-height:1.05;letter-spacing:-.02em;color:var(--accent)}
+.net small{font-size:.9rem;color:var(--muted);font-weight:400;letter-spacing:0;margin-left:6px;font-family:var(--font-sans)}
+.facts{color:var(--muted);font-size:.9rem}
+.facts b{color:var(--ink);font-weight:600;font-family:var(--font-mono);font-weight:500}
+.bar{display:flex;height:22px;border-radius:3px;overflow:hidden;margin:18px 0 10px;background:var(--soft)}
+.bar span{display:block;height:100%;min-width:0}
+.bar span + span{border-left:2px solid var(--surface)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.84rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+.notice{margin:14px 0 0;padding:10px 12px;background:var(--soft);border-radius:4px;font-size:.86rem;color:var(--muted)}
+
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal}
+th{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500}
+td.n,td.p{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+td.p{color:var(--muted)}
+tr.sum td{font-weight:600;border-top:2px solid var(--ink);border-bottom:0}
+tr.sum td.n{color:var(--accent)}
+tr.ag td{color:var(--muted)}
+tr.cur td{background:var(--soft)}
+tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:8px}
+.small{font-size:.84rem;color:var(--muted);margin:10px 0 0}
+
+.chartbox{overflow-x:auto}
+svg.chart{display:block;width:100%;min-width:520px;height:auto}
+.chart .ax{stroke:var(--line);stroke-width:1}
+.chart .gl{stroke:var(--line);stroke-width:1;opacity:.6}
+.chart .tx{fill:var(--muted);font-size:11px;font-family:var(--font-sans)}
+.chart .ln{fill:none;stroke:var(--accent);stroke-width:2.25;stroke-linejoin:round}
+.chart .ref{stroke:var(--muted);stroke-width:1;stroke-dasharray:4 4}
+.chart .dot{fill:var(--accent);stroke:var(--surface);stroke-width:2.5}
+.chart .cur{fill:var(--ink);font-size:12px;font-weight:600;font-family:var(--font-mono)}
+
+ul.notes{margin:0;padding-left:1.1em;color:var(--muted);font-size:.86rem;display:flex;flex-direction:column;gap:6px}
+ul.notes a{color:var(--accent)}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:420px){.card{padding:16px}}
+@media (prefers-reduced-motion:no-preference){.bar span{transition:width .25s ease}}
+</style>
+
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script>(function (root) {
+  // Parameter 2026 (Stand: Nov. 2026)
+  const P = {
+    bbgKV: 69750, bbgRV: 101400,
+    rv: 0.093, av: 0.013, kvBase: 0.073, kvReduced: 0.07, pvBase: 0.018,
+    pvKinderlos: 0.006, pvKindAbschlag: 0.0025,
+    wk: 1230, sa: 36, entlastung: 4260, entlastungExtra: 240,
+    kfbHalf: 4878,
+    soliFrei: 20350,
+    midiLo: 603, midiHi: 2000, midiF: 0.6619,
+    w1: 14071, w2: 34939, w3: 222260
+  };
+
+  // Einkommensteuer-Grundtarif § 32a EStG 2026
+  function tarif(x) {
+    x = Math.floor(x);
+    if (x <= 12348) return 0;
+    if (x <= 17799) { const y = (x - 12348) / 10000; return Math.floor((914.51 * y + 1400) * y); }
+    if (x <= 69878) { const z = (x - 17799) / 10000; return Math.floor((173.1 * z + 2397) * z + 1034.87); }
+    if (x <= 277825) return Math.floor(0.42 * x - 11135.63);
+    return Math.floor(0.45 * x - 19470.38);
+  }
+
+  // Lohnsteuer Klasse V/VI (Näherung nach Logik des amtlichen Programmablaufplans)
+  function up56(v) {
+    const d = 2 * (tarif(v * 1.25) - tarif(v * 0.75));
+    return Math.max(d, v * 0.14);
+  }
+  function stkl56(zx) {
+    zx = Math.floor(zx);
+    let st;
+    if (zx > P.w2) {
+      st = up56(P.w2) + (Math.min(zx, P.w3) - P.w2) * 0.42;
+      if (zx > P.w3) st += (zx - P.w3) * 0.45;
+    } else {
+      st = up56(zx);
+      if (zx > P.w1) {
+        const hoch = up56(P.w1) + (zx - P.w1) * 0.42;
+        st = Math.min(st, hoch);
+      }
+    }
+    return Math.floor(st);
+  }
+
+  function pvAN(kinder, u23) {
+    let r = P.pvBase;
+    if (kinder === 0 && !u23) r += P.pvKinderlos;
+    if (kinder >= 2) r -= P.pvKindAbschlag * (Math.min(kinder, 5) - 1);
+    return r;
+  }
+
+  // i: { gross (Jahr), stkl 1-6, kinder, kist (0 | 0.08 | 0.09), zusatz (% z.B. 2.9), u23 }
+  function compute(i) {
+    const G = i.gross, m = G / 12, st = i.stkl, kinder = i.kinder | 0;
+    const zus = (isFinite(i.zusatz) ? i.zusatz : 2.9) / 100;
+
+    if (m <= P.midiLo) {
+      const rv = G * 0.036;
+      return { mini: true, gross: G, lst: 0, soli: 0, kist: 0, rv, kv: 0, pv: 0, av: 0,
+        net: G - rv, agSv: G * 0.30, zvE: 0 };
+    }
+
+    let BE = m, midi = false;
+    if (m < P.midiHi) {
+      midi = true;
+      const F = P.midiF, lo = P.midiLo, hi = P.midiHi;
+      BE = F * lo + (hi / (hi - lo) - (lo / (hi - lo)) * F) * (m - lo);
+    }
+    const bRV = Math.min(BE * 12, P.bbgRV), bKV = Math.min(BE * 12, P.bbgKV);
+    const gRV = Math.min(G, P.bbgRV), gKV = Math.min(G, P.bbgKV);
+
+    const rv = bRV * P.rv, av = bRV * P.av;
+    const kv = bKV * (P.kvBase + zus / 2);
+    const pv = bKV * pvAN(kinder, !!i.u23);
+    const agSv = gRV * (P.rv + P.av) + gKV * (P.kvBase + zus / 2 + P.pvBase);
+
+    const vorsorge = rv + av + bKV * (P.kvReduced + zus / 2) + pv;
+    const wk = st === 6 ? 0 : P.wk;
+    const sa = st === 3 ? 72 : 36;
+    const entl = st === 2 && kinder >= 1 ? P.entlastung + P.entlastungExtra * (kinder - 1) : 0;
+    const zvE = Math.max(0, Math.floor(G - wk - sa - vorsorge - entl));
+
+    let lst;
+    if (st === 3) lst = 2 * tarif(zvE / 2);
+    else if (st === 5 || st === 6) lst = stkl56(zvE);
+    else lst = tarif(zvE);
+
+    // Basis für Soli und Kirchensteuer (mit Kinderfreibetrag)
+    let kfb = 0;
+    if (st === 2 || st === 3) kfb = kinder * 2 * P.kfbHalf;
+    else if (st === 1 || st === 4) kfb = kinder * P.kfbHalf;
+    let base;
+    if (st === 5 || st === 6) base = lst;
+    else if (st === 3) base = 2 * tarif(Math.max(0, zvE - kfb) / 2);
+    else base = tarif(Math.max(0, zvE - kfb));
+
+    const frei = st === 3 ? 2 * P.soliFrei : P.soliFrei;
+    let soli = 0;
+    if (base > frei) soli = Math.min(0.055 * base, 0.119 * (base - frei));
+    const kist = (i.kist || 0) * base;
+
+    const net = G - lst - soli - kist - rv - kv - pv - av;
+    return { mini: false, midi, gross: G, lst, soli, kist, rv, kv, pv, av, net, agSv, zvE };
+  }
+
+  const api = { P, tarif, stkl56, compute };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.BN = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+<script>const{useState,useMemo}=React;const fmt=d=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",minimumFractionDigits:d,maximumFractionDigits:d});const eur2=fmt(2);const pctF=new Intl.NumberFormat("de-DE",{minimumFractionDigits:1,maximumFractionDigits:1});const pct=v=>pctF.format(v*100)+" %";const STKL=["I","II","III","IV","V","VI"];function toNum(v,d){const n=parseFloat(String(v).replace(",","."));return isFinite(n)?n:d}function Field({id,label,children,hint}){return React.createElement("div",{className:"field"},React.createElement("label",{htmlFor:id},label),children,hint&&React.createElement("div",{className:"hint"},hint))}function Form({s,set}){const monthly=s.per==="m";const max=monthly?15e3:18e4;const step=monthly?50:600;const switchPer=per=>{if(per===s.per)return;const cur=toNum(s.value,0);set({per,value:per==="y"?Math.round(cur*12):Math.round(cur/12/50)*50})};return React.createElement("form",{className:"card",onSubmit:e=>e.preventDefault(),autoComplete:"off"},React.createElement("h2",null,"Angaben"),React.createElement("div",{className:"field"},React.createElement("span",{className:"lbl",id:"perlbl"},"Bruttogehalt pro"),React.createElement("div",{className:"seg",role:"radiogroup","aria-labelledby":"perlbl"},[["m","Monat"],["y","Jahr"]].map(([v,t])=>React.createElement(React.Fragment,{key:v},React.createElement("input",{type:"radio",name:"per",id:"per-"+v,checked:s.per===v,onChange:()=>switchPer(v)}),React.createElement("label",{htmlFor:"per-"+v},t))))),React.createElement(Field,{id:"gross",label:"Brutto in Euro"},React.createElement("input",{type:"number",id:"gross",inputMode:"decimal",min:"0",max:"1000000",step,value:s.value,onChange:e=>set({value:e.target.value})}),React.createElement("input",{type:"range",min:"0",max,step,"aria-label":"Brutto einstellen",value:Math.min(toNum(s.value,0),max),onChange:e=>set({value:e.target.value})})),React.createElement(Field,{id:"stkl",label:"Steuerklasse"},React.createElement("select",{id:"stkl",value:s.stkl,onChange:e=>set({stkl:+e.target.value})},React.createElement("option",{value:"1"},"I \u2013 ledig, geschieden"),React.createElement("option",{value:"2"},"II \u2013 alleinerziehend"),React.createElement("option",{value:"3"},"III \u2013 verheiratet, h\xF6heres Einkommen"),React.createElement("option",{value:"4"},"IV \u2013 verheiratet, \xE4hnliches Einkommen"),React.createElement("option",{value:"5"},"V \u2013 verheiratet, zu Klasse III"),React.createElement("option",{value:"6"},"VI \u2013 zweites Arbeitsverh\xE4ltnis"))),React.createElement("div",{className:"row2 field"},React.createElement("div",null,React.createElement("label",{htmlFor:"kinder"},"Kinder"),React.createElement("select",{id:"kinder",value:s.kinder,onChange:e=>set({kinder:+e.target.value})},[0,1,2,3,4,5].map(n=>React.createElement("option",{key:n,value:n},n)))),React.createElement("div",null,React.createElement("label",{htmlFor:"kist"},"Kirchensteuer"),React.createElement("select",{id:"kist",value:s.kist,onChange:e=>set({kist:+e.target.value})},React.createElement("option",{value:"0"},"keine"),React.createElement("option",{value:"0.09"},"9 % (NRW u. a.)"),React.createElement("option",{value:"0.08"},"8 % (BY, BW)")))),React.createElement(Field,{id:"zusatz",label:"Zusatzbeitrag Krankenkasse (%)",hint:"\xD8 2026: 2,9 %. Den Satz deiner Kasse findest du auf deren Website."},React.createElement("input",{type:"number",id:"zusatz",inputMode:"decimal",min:"0",max:"6",step:"0.1",value:s.zusatz,onChange:e=>set({zusatz:e.target.value})})),React.createElement("div",{className:"field"},React.createElement("label",{className:"check",htmlFor:"u23"},React.createElement("input",{type:"checkbox",id:"u23",checked:s.u23,onChange:e=>set({u23:e.target.checked})}),React.createElement("span",null,"J\xFCnger als 23 Jahre (kein Pflegeversicherungs-Zuschlag f\xFCr Kinderlose)"))))}function Summary({r,inp}){const segs=[{k:"Netto",v:r.net,c:"var(--c-net)"},{k:"Lohnsteuer, Soli, Kirchensteuer",v:r.lst+r.soli+r.kist,c:"var(--c-tax)"},{k:"Rentenversicherung",v:r.rv,c:"var(--c-rv)"},{k:"Kranken- und Pflegeversicherung",v:r.kv+r.pv,c:"var(--c-kv)"},{k:"Arbeitslosenversicherung",v:r.av,c:"var(--c-av)"}].map(x=>({...x,p:Math.max(0,x.v)/(r.gross||1)}));let note="";if(r.mini)note="Minijob (bis 603 \u20AC pro Monat): Der Arbeitgeber f\xFChrt Pauschalabgaben ab, du zahlst 3,6 % Rentenversicherung, falls du dich nicht befreien l\xE4sst.";else if(r.midi)note="\xDCbergangsbereich (Midijob): Deine Sozialabgaben werden aus einem reduzierten Entgelt berechnet, die Rentenanspr\xFCche bleiben aus dem vollen Brutto.";else if(inp.stkl===2&&inp.kinder===0)note="Steuerklasse II setzt mindestens ein Kind voraus. Ohne Kind entf\xE4llt der Entlastungsbetrag f\xFCr Alleinerziehende.";return React.createElement("section",{className:"card","aria-live":"polite"},React.createElement("div",{className:"hero"},React.createElement("div",{className:"net"},eur2.format(r.net/12),React.createElement("small",null,"netto pro Monat")),React.createElement("div",{className:"facts"},"Von ",React.createElement("b",null,eur2.format(r.gross/12))," brutto bleiben ",React.createElement("b",null,pct(r.gross?r.net/r.gross:0)),". Abgaben gesamt: ",React.createElement("b",null,eur2.format((r.gross-r.net)/12)))),React.createElement("div",{className:"bar",role:"img","aria-label":"Aufteilung des Bruttos"},segs.map(s=>React.createElement("span",{key:s.k,style:{width:(s.p*100).toFixed(2)+"%",background:s.c},title:s.k+": "+pct(s.p)}))),React.createElement("div",{className:"legend"},segs.map(s=>React.createElement("span",{key:s.k},React.createElement("i",{style:{background:s.c}}),s.k," ",pct(s.p)))),note&&React.createElement("div",{className:"notice"},note))}function Breakdown({r}){const g=r.gross||1;const rows=[["Bruttogehalt",r.gross,null],["Lohnsteuer",-r.lst,"var(--c-tax)"],["Solidarit\xE4tszuschlag",-r.soli,"var(--c-tax)"],["Kirchensteuer",-r.kist,"var(--c-tax)"],["Rentenversicherung",-r.rv,"var(--c-rv)"],["Krankenversicherung",-r.kv,"var(--c-kv)"],["Pflegeversicherung",-r.pv,"var(--c-kv)"],["Arbeitslosenversicherung",-r.av,"var(--c-av)"],["Nettogehalt",r.net,null,true]];return React.createElement("section",{className:"card"},React.createElement("h2",null,"Von Brutto zu Netto"),React.createElement("div",{className:"tbl"},React.createElement("table",null,React.createElement("thead",null,React.createElement("tr",null,React.createElement("th",null,"Position"),React.createElement("th",null,"Monat"),React.createElement("th",null,"Jahr"),React.createElement("th",null,"Anteil"))),React.createElement("tbody",null,rows.map(([name,v,color,sum])=>{const sign=v<0?"\u2212":"";const a=Math.abs(v);return React.createElement("tr",{key:name,className:sum?"sum":void 0},React.createElement("td",null,color&&React.createElement("span",{className:"sw",style:{background:color}}),name),React.createElement("td",{className:"n"},sign,eur2.format(a/12)),React.createElement("td",{className:"n"},sign,eur2.format(a)),React.createElement("td",{className:"p"},pct(a/g)))})))),React.createElement("p",{className:"small"},"Zus\xE4tzlich zahlt der Arbeitgeber etwa ",eur2.format(r.agSv/12)," pro Monat an Sozialabgaben (ohne Umlagen). Seine Gesamtkosten liegen damit bei rund ",eur2.format((r.gross+r.agSv)/12)," pro Monat."))}function Compare({inp}){const rows=useMemo(()=>[1,2,3,4,5,6].map(k=>({k,r:BN.compute({...inp,stkl:k})})),[inp]);return React.createElement("section",{className:"card"},React.createElement("h2",null,"Netto je Steuerklasse bei gleichem Brutto"),React.createElement("div",{className:"tbl"},React.createElement("table",null,React.createElement("thead",null,React.createElement("tr",null,React.createElement("th",null,"Steuerklasse"),React.createElement("th",null,"Lohnsteuer / Monat"),React.createElement("th",null,"Netto / Monat"),React.createElement("th",null,"Netto-Quote"))),React.createElement("tbody",null,rows.map(({k,r})=>React.createElement("tr",{key:k,className:k===inp.stkl?"cur":void 0},React.createElement("td",null,"Klasse ",STKL[k-1]),React.createElement("td",{className:"n"},eur2.format(r.lst/12)),React.createElement("td",{className:"n"},eur2.format(r.net/12)),React.createElement("td",{className:"p"},pct(r.gross?r.net/r.gross:0))))))),React.createElement("p",{className:"small"},"Die Klassen V und VI sind eine N\xE4herung. F\xFCr die Wahl zwischen III/V und IV/IV z\xE4hlt das gemeinsame Einkommen beider Partner, nicht nur dieses Gehalt."))}const W=640,H=280,L=44,R=16,T=22,B=34;const X0=600,X1=15e3,Y0=.3,Y1=1;const sx=m=>L+(m-X0)/(X1-X0)*(W-L-R);const sy=q=>T+(1-(Math.min(Math.max(q,Y0),Y1)-Y0)/(Y1-Y0))*(H-T-B);function Chart({inp,cur}){const{gross,...rest}=inp;const key=JSON.stringify(rest);const points=useMemo(()=>{const p=[];for(let m=650;m<=X1;m+=50){const r=BN.compute({...rest,gross:m*12});p.push(sx(m).toFixed(1)+","+sy(r.net/r.gross).toFixed(1))}return p.join(" ")},[key]);const cm=cur.gross/12;const showDot=cur.gross>0&&cm>=650&&cm<=X1;const cx=sx(cm),cy=sy(cur.gross?cur.net/cur.gross:0);const anchor=cx>W-110?"end":"start";const grid=[.3,.4,.5,.6,.7,.8,.9,1];const xt=[2500,5e3,7500,1e4,12500,15e3];const limits=[[5812.5,"KV/PV-Grenze","end"],[8450,"RV/AV-Grenze","start"]];return React.createElement("section",{className:"card"},React.createElement("h2",null,"Netto-Quote nach Gehaltsh\xF6he"),React.createElement("div",{className:"chartbox"},React.createElement("svg",{className:"chart",viewBox:`0 0 ${W} ${H}`,role:"img","aria-label":"Netto-Quote in Abh\xE4ngigkeit vom Bruttogehalt"},grid.map(q=>React.createElement("g",{key:q},React.createElement("line",{className:"gl",x1:L,x2:W-R,y1:sy(q),y2:sy(q)}),React.createElement("text",{className:"tx",x:L-8,y:sy(q)+4,textAnchor:"end"},Math.round(q*100)," %"))),xt.map(t=>React.createElement("text",{key:t,className:"tx",x:sx(t),y:H-12,textAnchor:"middle"},new Intl.NumberFormat("de-DE").format(t))),React.createElement("text",{className:"tx",x:W-R,y:H,textAnchor:"end"},"Brutto pro Monat in \u20AC"),React.createElement("line",{className:"ax",x1:L,x2:W-R,y1:H-B,y2:H-B}),limits.map(([v,t,a])=>React.createElement("g",{key:t},React.createElement("line",{className:"ref",x1:sx(v),x2:sx(v),y1:T,y2:H-B}),React.createElement("text",{className:"tx",x:sx(v)+(a==="end"?-5:5),y:T+2,textAnchor:a},t))),React.createElement("polyline",{className:"ln",points}),showDot&&React.createElement("g",null,React.createElement("circle",{className:"dot",cx,cy,r:"5.5"}),React.createElement("text",{className:"cur",x:anchor==="end"?cx-10:cx+10,y:cy-10,textAnchor:anchor},pct(cur.net/cur.gross))))),React.createElement("p",{className:"small"},"Mit deinen Einstellungen. Die gestrichelten Linien zeigen die Beitragsbemessungsgrenzen 2026: Kranken- und Pflegeversicherung bei 5.812,50 \u20AC pro Monat, Renten- und Arbeitslosenversicherung bei 8.450 \u20AC. Dar\xFCber steigen die Sozialabgaben nicht mehr, die Quote sinkt vor allem durch die Steuer."))}function Notes(){return React.createElement("section",{className:"card"},React.createElement("h2",null,"Annahmen und Quellen"),React.createElement("ul",{className:"notes"},React.createElement("li",null,"Hochrechnung auf zw\xF6lf gleiche Monatsgeh\xE4lter, ohne Sonderzahlungen, Freibetr\xE4ge, Faktorverfahren und Kindergeld. Das Ergebnis ist ein Richtwert und ersetzt nicht die Gehaltsabrechnung oder den amtlichen Lohnsteuerrechner des BMF."),React.createElement("li",null,"Vorsorgepauschale vereinfacht aus den tats\xE4chlichen Arbeitnehmerbeitr\xE4gen (Rente, Arbeitslosigkeit, Pflege, Kranken mit 7,0 % plus halbem Zusatzbeitrag). Arbeitnehmer-Pauschbetrag 1.230 \u20AC, Sonderausgaben-Pauschbetrag 36 \u20AC (Klasse III: 72 \u20AC)."),React.createElement("li",null,"Zwischen 603,01 \u20AC und 2.000 \u20AC im Monat gilt der \xDCbergangsbereich mit Faktor 0,6619, bis 603 \u20AC ein Minijob mit 3,6 % Rentenversicherungsanteil. Die Arbeitgeber-Umlagen U1, U2 und U3 sind nicht eingerechnet."),React.createElement("li",null,"Soli ab einer Einkommensteuer von 20.350 \u20AC (Klasse III: 40.700 \u20AC) mit Milderungszone. Kinderfreibetr\xE4ge wirken nur auf Soli und Kirchensteuer, nicht auf die Lohnsteuer."),React.createElement("li",null,"Quellen: ",React.createElement("a",{href:"https://www.gesetze-im-internet.de/estg/__32a.html",target:"_blank",rel:"noopener"},"\xA7 32a EStG")," (Grundfreibetrag 12.348 \u20AC), Sozialversicherungs-Rechengr\xF6\xDFen 2026 (Beitragsbemessungsgrenzen 69.750 \u20AC und 101.400 \u20AC, \xD8 Zusatzbeitrag 2,9 %). Die Schwellenwerte der Klasse V/VI, der Soli-Grenze und der Kinderfreibetr\xE4ge sind nicht gegen eine Prim\xE4rquelle gepr\xFCft.")))}function App(){const[s,setS]=useState({per:"m",value:4500,stkl:1,kinder:0,kist:0,zusatz:2.9,u23:false});const set=patch=>setS(p=>({...p,...patch}));const inp=useMemo(()=>({gross:Math.max(0,toNum(s.value,0))*(s.per==="m"?12:1),stkl:s.stkl,kinder:s.kinder,kist:s.kist,zusatz:toNum(s.zusatz,2.9),u23:s.u23}),[s]);const r=useMemo(()=>BN.compute(inp),[inp]);return React.createElement("div",{className:"wrap"},React.createElement("header",null,React.createElement("h1",null,"Brutto-Netto-Rechner 2026"),React.createElement("p",{className:"lede"},"Was bleibt vom Gehalt \xFCbrig? Berechnung nach Einkommensteuertarif \xA7 32a EStG, den Sozialversicherungswerten 2026 und dem \xDCbergangsbereich f\xFCr Midijobs.")),React.createElement("div",{className:"grid"},React.createElement(Form,{s,set}),React.createElement("div",{className:"stack"},React.createElement(Summary,{r,inp}),React.createElement(Breakdown,{r}))),React.createElement(Compare,{inp}),React.createElement(Chart,{inp,cur:r}),React.createElement(Notes,null))}ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App,null));
+</script>
